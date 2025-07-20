@@ -9,13 +9,19 @@ function sanitizeInput(data) {
     title: sanitizeHtml(data.title, { allowedTags: [], allowedAttributes: {} }),
     slug: sanitizeHtml(data.slug, { allowedTags: [], allowedAttributes: {} }),
     section: sanitizeHtml(data.section, { allowedTags: [], allowedAttributes: {} }),
-    published: data.published,
-    content: sanitizeHtml(data.content, {
-      allowedTags: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br'],
+    published: data.published === "true" || data.published === true,
+    excerpt: sanitizeHtml(data.excerpt || "", {
+      allowedTags: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'],
       allowedAttributes: {
         a: ['href', 'name', 'target'],
       },
-      allowedIframeHostnames: [],
+    }),
+    body: sanitizeHtml(data.body || "", {
+      allowedTags: ['b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'p', 'br', 'img', 'h1', 'h2', 'h3', 'blockquote'],
+      allowedAttributes: {
+        a: ['href', 'name', 'target'],
+        img: ['src', 'alt', 'width', 'height'],
+      },
     }),
   };
 }
@@ -48,7 +54,6 @@ exports.getBySlug = async (req, res) => {
       slug: req.params.slug,
       published: true,
     });
-    console.log("Requested slug:", req.params.slug);
     if (!article) return res.status(404).json({ message: "Article not found" });
     res.json(article);
   } catch (err) {
@@ -73,7 +78,7 @@ exports.createArticle = async (req, res) => {
       ...cleanData,
       imageUrl: result?.secure_url || "",
       cloudinaryId: result?.public_id || "",
-      publishedAt: cleanData.published === "true" ? new Date() : null,
+      publishedAt: cleanData.published ? new Date() : null,
     });
 
     await article.save();
@@ -109,6 +114,7 @@ exports.validateArticle = [
   body("title").notEmpty().trim().escape(),
   body("slug").notEmpty().trim().escape(),
   body("section").notEmpty().trim().escape(),
-  body("content").notEmpty(), // Will be sanitized separately
+  body("body").notEmpty(), // DO NOT escape HTML
+  body("excerpt").optional(),
   body("published").optional().isBoolean().toString(),
 ];
