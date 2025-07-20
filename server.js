@@ -17,8 +17,11 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/articles", articleRoutes);
+app.get("/", (req, res) => {
+  res.send("Welcome to the NGO News API");
+});
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
